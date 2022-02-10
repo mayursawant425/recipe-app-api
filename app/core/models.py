@@ -7,7 +7,7 @@ class UserManager(BaseUserManager):
     """Manages User model"""
 
     def create_user(self, email, password=None, **extra_fields):
-        """creates and saves new user"""
+        """creates and saves a new user"""
 
         if not email:
             raise valueError('Email is required')
@@ -15,6 +15,16 @@ class UserManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(eamil, **extra_fields)
         user.set_password(password)
+        user.save(using=self._db)
+
+        return user
+
+    def create_superuser(self, eamil, password, **extra_fields):
+        """Creates and saves a new superuser"""
+
+        user = self.create_user(email, password, **extra_fields)
+        user.is_superuser = True
+        user.is_staff = True
         user.save(using=self._db)
 
         return user
@@ -31,4 +41,3 @@ class User(AbstractBaseUser, PermissionMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'email'
-    
