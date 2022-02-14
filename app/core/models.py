@@ -55,3 +55,15 @@ class Tag(models.Model):
         """String representaion of tag model"""
 
         return self.name
+
+
+class Ingredient(models.Model):
+    """Ingredient model for adding ingredients to recipe"""
+
+    name = models.CharField(max_length=255)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+
+    def __str__(self):
+        """Returns string representaion of ingredient model"""
+
+        return self.name
