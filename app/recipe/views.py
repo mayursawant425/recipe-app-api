@@ -15,10 +15,20 @@ class TagViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
-    def get_querysrt(self):
+    def get_queryset(self):
         """Returns objects of current authenticated user only"""
 
-        return self.queryset.filter(user=self.request.user).order_by('name')
+        assigned_only = bool(
+            int(self.request.query_params.get('assigned_only', 0))
+        )
+        queryset = self.queryset
+
+        if assigned_only:
+            queryset = queryset.filter(recipe__isnull=False)
+        print(assigned_only, queryset)
+        return queryset.filter(
+            user=self.request.user
+        ).order_by('name').distinct()
 
     def perform_create(self, serializer):
         """Creates a new tag for authenticated user"""
@@ -38,7 +48,17 @@ class IngredientViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
     def get_queryset(self):
         """Returns objects of current authenticated users only"""
 
-        return self.queryset.filter(user=self.request.user).order_by('name')
+        assigned_only = bool(
+            int(self.request.query_params.get('assigned_only', 0))
+        )
+        queryset = self.queryset
+
+        if assigned_only:
+            queryset = queryset.filter(recipe__isnull=False)
+
+        return queryset.filter(
+            user=self.request.user
+        ).order_by('name').distinct()
 
     def perform_create(self, serializer):
         """Creates a new ingredient object for authenticated user"""
@@ -54,10 +74,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
     authentication_classes = (authentication.TokenAuthentication,)
     permission_classes = (permissions.IsAuthenticated,)
 
+    def _params_to_int(self, qs):
+        """Converts string params to list of int"""
+
+        return list(map(int, qs.split(',')))
+
     def get_queryset(self):
         """Returns objects of current authenticated user only"""
 
-        return self.queryset.filter(user=self.request.user).order_by('title')
+        tags = self.request.query_params.get('tags')
+        ingredients = self.request.query_params.get('ingredients')
+        queryset = self.queryset
+        if tags:
+            tag_ids = self._params_to_int(tags)
+            queryset = queryset.filter(tags__id__in=tag_ids)
+        if ingredients:
+            ingredient_ids = self._params_to_int(ingredients)
+            queryset = queryset.filter(ingredients__id__in=ingredient_ids)
+
+        return queryset.filter(user=self.request.user).order_by('title')
 
     def get_serializer_class(self):
         """Selects appropriate serializer class"""
